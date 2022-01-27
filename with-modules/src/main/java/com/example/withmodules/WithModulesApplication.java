@@ -1,12 +1,10 @@
 package com.example.withmodules;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.opensaml.core.Version;
 
-@SpringBootApplication
-public class WithModulesApplication {
+public class WithModulesApplication  {
 
 	public static void main(String[] args) {
-		SpringApplication.run(WithModulesApplication.class, args);
+		System.out.println(Version.getVersion());
 	}
 }
