@@ -1,24 +1,34 @@
 package com.example.coroutineadvice;
 
 import java.lang.reflect.Method;
+import java.util.Objects;
 
+import kotlin.coroutines.Continuation;
+import kotlinx.coroutines.reactive.AwaitKt;
 import kotlinx.coroutines.reactive.ReactiveFlowKt;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import org.springframework.core.CoroutinesUtils;
 import org.springframework.core.KotlinDetector;
 import org.springframework.core.MethodParameter;
 import org.springframework.core.ReactiveAdapter;
 import org.springframework.core.ReactiveAdapterRegistry;
+import org.springframework.core.convert.converter.Converter;
 
 public class OneMethodInterceptor implements MethodInterceptor {
     private static final String COROUTINES_FLOW_CLASS_NAME = "kotlinx.coroutines.flow.Flow";
 
     private static final int RETURN_TYPE_METHOD_PARAMETER_INDEX = -1;
 
-    private final ReturnValueProcessor after = new ReturnValueProcessor();
+    private final Converter<Object, Mono<Object>> advice = (result) -> {
+        if (result.toString().startsWith("h")) {
+            return Mono.just("accepted");
+        }
+        return Mono.error(() -> new IllegalArgumentException("denied"));
+    };
 
     @Override
     public Object invoke(MethodInvocation invocation) throws Throwable {
@@ -28,27 +38,26 @@ public class OneMethodInterceptor implements MethodInterceptor {
         boolean isSuspendingFunction = KotlinDetector.isSuspendingFunction(method);
         boolean hasFlowReturnType = COROUTINES_FLOW_CLASS_NAME
                 .equals(new MethodParameter(method, RETURN_TYPE_METHOD_PARAMETER_INDEX).getParameterType().getName());
-        Object result = invocation.proceed();
         if (Mono.class.isAssignableFrom(returnType)) {
-            return ((Mono<?>) result).flatMap((r) -> this.after.after(r)).then((Mono<?>) result);
+            Object result = invocation.proceed();
+            return ((Mono<?>) result).flatMap((r) -> this.advice.convert(r)).then((Mono<?>) result);
         }
         if (Flux.class.isAssignableFrom(returnType)) {
-            return ((Flux<?>) result).flatMap((r) -> this.after.after(r)).thenMany((Flux<?>) result);
+            Object result = invocation.proceed();
+            return ((Flux<?>) result).flatMap((r) -> this.advice.convert(r)).thenMany((Flux<?>) result);
         }
         if (!isSuspendingFunction && hasFlowReturnType) {
             ReactiveAdapter adapter = ReactiveAdapterRegistry.getSharedInstance().getAdapter(returnType);
-            Flux<?> flux = Flux.from(adapter.toPublisher(result));
-            return ReactiveFlowKt.asFlow(flux.flatMap((r) -> this.after.after(r)).thenMany(flux));
+            Flux<?> flux = Flux.from(adapter.toPublisher(invocation.proceed()));
+            return ReactiveFlowKt.asFlow(flux.flatMap((r) -> this.advice.convert(r)).thenMany(flux));
         }
         if (isSuspendingFunction) {
-            // ???
-
-            // result is of type CoroutineSingletons... want to somehow adapt into a Publisher
-            // so calling ReturnValueProcessor is possible
-
-            // NOTE: cannot pre-emptively call CoroutineUtils.invokeSuspendingFunction since that
-            // is not aware of other method interceptors
+            Mono<?> response = Mono.from(CoroutinesUtils.invokeSuspendingFunction(invocation.getMethod(), invocation.getThis(),
+                            invocation.getArguments()))
+                    .flatMap((r) -> this.advice.convert(r).then(Mono.just(r)));
+            return AwaitKt.awaitSingleOrNull(response,
+                    (Continuation<Object>) invocation.getArguments()[invocation.getArguments().length - 1]);
         }
-        return result;
+        return invocation.proceed();
     }
 }

@@ -16,7 +16,7 @@ open class SampleController {
     @GetMapping("/helloSuspendDenied")
     open suspend fun helloSuspendDenied() : String {
         delay(1)
-        return "shouldfail"
+        return "heyshouldfail"
     }
 
     @GetMapping("/hello")
@@ -26,6 +26,6 @@ open class SampleController {
 
     @GetMapping("/helloDenied")
     open fun helloDenied() : Mono<String> {
-        return Mono.just("shouldfail");
+        return Mono.just("heyshouldfail");
     }
 }
