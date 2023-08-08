@@ -62,7 +62,7 @@ public class TwoMethodInterceptor implements MethodInterceptor {
             Mono<?> response = Mono.from(CoroutinesUtils.invokeSuspendingFunction(invocation.getMethod(), invocation.getThis(),
                             invocation.getArguments()))
                     .flatMap((r) -> this.advice.convert(r).then(Mono.just(r)));
-            return AwaitKt.awaitSingleOrNull(response,
+            return MonoKt.awaitSingleOrNull(response,
                     (Continuation<Object>) invocation.getArguments()[invocation.getArguments().length - 1]);
         }
         return invocation.proceed();

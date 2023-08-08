@@ -6,6 +6,7 @@ import java.util.Objects;
 import kotlin.coroutines.Continuation;
 import kotlinx.coroutines.reactive.AwaitKt;
 import kotlinx.coroutines.reactive.ReactiveFlowKt;
+import kotlinx.coroutines.reactor.MonoKt;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import reactor.core.publisher.Flux;
@@ -55,7 +56,7 @@ public class OneMethodInterceptor implements MethodInterceptor {
             Mono<?> response = Mono.from(CoroutinesUtils.invokeSuspendingFunction(invocation.getMethod(), invocation.getThis(),
                             invocation.getArguments()))
                     .flatMap((r) -> this.advice.convert(r).then(Mono.just(r)));
-            return AwaitKt.awaitSingleOrNull(response,
+            return MonoKt.awaitSingleOrNull(response,
                     (Continuation<Object>) invocation.getArguments()[invocation.getArguments().length - 1]);
         }
         return invocation.proceed();
