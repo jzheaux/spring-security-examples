@@ -1,7 +1,7 @@
 import { Routes } from '@angular/router';
 import { HomeComponent } from './home/home.component';
-import { PostComponent } from './post/post.component';
-import { LoginComponent } from './login/login.component';
+import { LoginComponent } from './auth/auth.component';
+import { PersonComponent } from './person/person.component';
 
 const routeConfig: Routes = [
 	{
@@ -15,9 +15,9 @@ const routeConfig: Routes = [
 		title: 'Login page'
 	},
 	{
-		path: 'posts/:id',
-		component: PostComponent,
-		title: 'Post'
+		path: 'person/:id',
+		component: PersonComponent,
+		title: 'Profile page'
 	}
 ];
 

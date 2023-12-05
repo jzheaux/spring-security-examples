@@ -2,7 +2,7 @@ package io.jzheaux.pluralsight.instagraph.data;
 
 import org.springframework.data.annotation.Id;
 
-public record Post(@Id Long id, String content, Long person) {
+public record Post(@Id Long id, String content, Long person, String name) {
 	@Override
 	public boolean equals(Object obj) {
 		if (obj == this) {

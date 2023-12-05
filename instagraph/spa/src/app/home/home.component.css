@@ -1,5 +1,6 @@
 .results {
-	display: grid;
+	display: block;
+	text-align: center;
 	column-gap: 14px;
 	row-gap: 14px;
 	grid-template-columns: repeat(auto-fill, minmax(400px, 400px));
@@ -7,6 +8,40 @@
 	justify-content: space-around;
   }
   
+  .result {
+	display: inline-flex;
+	border: solid 1px var(--primary-color);
+	border-radius: 8px;
+  	margin: 10px 5px;
+	background-color: var(--accent-color);
+	width: 85%;
+	text-align: left;
+  }
+
+  .result section {
+	width: 40%;
+  }
+
+  .result p {
+	padding: 20px;
+  }
+
+  .name {
+	font-weight: bold;
+  }
+
+  .actions {
+	text-align: right;
+	margin: auto;
+  }
+
+  textarea {
+	vertical-align: middle;
+	margin-right: 5px;
+	width: 300px;
+	height: 60px;
+  }
+
   input[type="text"] {
 	border: solid 1px var(--primary-color);
 	padding: 10px;
@@ -22,6 +57,7 @@
 	background: var(--primary-color);
 	color: white;
 	border-radius: 8px;
+	margin-right: 5px;
   }
   
   @media (min-width: 500px) and (max-width: 768px) {

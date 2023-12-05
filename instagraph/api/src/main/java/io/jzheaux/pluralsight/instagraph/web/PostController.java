@@ -1,12 +1,20 @@
 package io.jzheaux.pluralsight.instagraph.web;
 
+import java.net.URI;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import io.jzheaux.pluralsight.instagraph.data.Person;
+import io.jzheaux.pluralsight.instagraph.data.PersonRepository;
 import io.jzheaux.pluralsight.instagraph.data.Post;
 import io.jzheaux.pluralsight.instagraph.data.PostRepository;
 
 import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.Links;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,12 +40,13 @@ public class PostController {
 	}
 
 	@GetMapping
-	public Iterable<Post> getPosts() {
-		return this.posts.findAll();
+	public Iterable<PostModel> getPosts() {
+		return StreamSupport.stream(this.posts.findAll().spliterator(), false)
+			.map(this::toModel).collect(Collectors.toList());
 	}
 
 	@GetMapping("/{id}")
-	public ResponseEntity<EntityModel<Post>> getPost(@PathVariable("id") Long id) {
+	public ResponseEntity<PostModel> getPost(@PathVariable("id") Long id) {
 		return this.posts.findById(id)
 			.map(this::toModel)
 			.map(ResponseEntity::ok)
@@ -45,17 +54,17 @@ public class PostController {
 	}
 
 	@PostMapping
-	public ResponseEntity<EntityModel<Post>> addPost(@RequestBody String content) {
+	public ResponseEntity<PostModel> addPost(@RequestBody String content) {
 		Person person = this.currentPerson.get();
-		Post post = this.posts.create(new Post(null, content, person.getId()));
-		EntityModel<Post> model = toModel(post);
-		return ResponseEntity.created(model.getRequiredLink("get").toUri()).body(model);
+		Post post = this.posts.create(new Post(null, content, person.getId(), person.getName()));
+		PostModel model = toModel(post);
+		return ResponseEntity.created(model.links().get("get")).body(model);
 	}
 
 	@PutMapping("/{id}")
-	public ResponseEntity<EntityModel<Post>> updatePost(@PathVariable("id") Long id, @RequestBody String content) {
+	public ResponseEntity<PostModel> updatePost(@PathVariable("id") Long id, @RequestBody String content) {
 		return this.posts.findById(id)
-			.map((post) -> this.posts.update(new Post(post.id(), content, post.person())))
+			.map((post) -> this.posts.update(new Post(post.id(), content, post.person(), post.name())))
 			.map(this::toModel)
 			.map(ResponseEntity::ok)
 			.orElseGet(() -> ResponseEntity.notFound().build());
@@ -67,12 +76,20 @@ public class PostController {
 		return ResponseEntity.noContent().build();
 	}
 
-	private EntityModel<Post> toModel(Post post) {
+	private PostModel toModel(Post post) {
 		Person person = this.currentPerson.get();
 		PostController linker = methodOn(getClass());
-		return EntityModel.of(post)
-				.addIf(person.hasAuthority("post:read"), () -> linkTo(linker.getPost(post.id())).withRel("get"))
-				.addIf(person.hasAuthority("post:write") && person.owns(post), () -> linkTo(linker.updatePost(post.id(), null)).withRel("put"))
-				.addIf(person.hasAuthority("post:write") && person.owns(post), () -> linkTo(linker.deletePost(post.id())).withRel("delete"));
+		Map<String, URI> links = new HashMap<>();
+		if (person.hasAuthority("post:read")) {
+			links.put("get", linkTo(linker.getPost(post.id())).toUri());
+		}
+		if (person.hasAuthority("post:write") && person.owns(post)) {
+			links.put("put", linkTo(linker.updatePost(post.id(), null)).toUri());
+			links.put("delete", linkTo(linker.deletePost(post.id())).toUri());
+		}
+		return new PostModel(post, links);
+	}
+
+	public record PostModel(Post post, Map<String, URI> links) {
 	}
 }
