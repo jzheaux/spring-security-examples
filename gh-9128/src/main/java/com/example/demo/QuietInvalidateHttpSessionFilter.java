@@ -22,7 +22,7 @@ public class QuietInvalidateHttpSessionFilter extends OncePerRequestFilter {
 			public HttpSession getSession(boolean create) {
 				HttpSession session = super.getSession(create);
 				if (session == null) {
-					return session;
+					return null;
 				}
 				return new QuietInvalidateHttpSessionWrapper(session);
 			}
