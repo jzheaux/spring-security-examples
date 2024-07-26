@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component;
 public final class MyImpl implements My {
 
 	@Override
-	public String my() {
-		return "";
+	public String my(String value) {
+		return value;
 	}
 }

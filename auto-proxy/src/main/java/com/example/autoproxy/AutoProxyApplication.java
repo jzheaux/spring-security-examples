@@ -5,7 +5,6 @@ import org.springframework.aop.framework.adapter.MethodBeforeAdviceInterceptor;
 import org.springframework.aop.support.DefaultPointcutAdvisor;
 import org.springframework.aop.support.annotation.AnnotationMatchingPointcut;
 import org.springframework.beans.factory.config.BeanDefinition;
-import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.AutoProxyRegistrar;
@@ -26,29 +25,11 @@ public class AutoProxyApplication {
 	@Bean
 	Advisor advice() {
 		MethodBeforeAdviceInterceptor interceptor = new MethodBeforeAdviceInterceptor(
-			(method, args, target) -> System.out.println("before")
-		);
+			(method, args, target) -> args[0] = "before " + args[0]);
 		DefaultPointcutAdvisor advisor = new DefaultPointcutAdvisor();
 		advisor.setPointcut(new AnnotationMatchingPointcut(null, MyAnnotation.class, true));
 		advisor.setAdvice(interceptor);
 		return advisor;
 	}
 
-	@Bean
-	CommandLineRunner run(My my) {
-		return new UseAdvice(my);
-	}
-
-	static final class UseAdvice implements CommandLineRunner {
-		private final My my;
-
-		UseAdvice(My my) {
-			this.my = my;
-		}
-
-		@Override
-		public void run(String... args) throws Exception {
-			this.my.my();
-		}
-	}
 }
